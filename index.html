@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trifecta Cafetería — Pastelería, Té y Café</title>
+
+<!-- ============================================================
+     TRIFECTA CAFETERÍA — Prototipo beta SPA
+     Fuente de verdad: bio real de Instagram (@trifecta.cafeteria),
+     fotos reales del feed y ficha de Google Maps.
+     Precios y nombres de producto EXACTOS no están confirmados —
+     ver comentario "PRECIOS DE EJEMPLO" antes de la carta.
+     ============================================================ -->
+
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Inter:wght@400;500&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --bg:        #FAF9F5; /* blanco cálido, interior real del local */
+    --sage:      #C3D1A4; /* verde salvia — color de feed / isotipo */
+    --brown:     #3B2A1E; /* marrón oscuro del logotipo real */
+    --ink:       #1A1A1A; /* negro mate — estructura de mesas */
+    --cream:     #E8D9B5; /* crema/hueso — vajilla real */
+  }
+  *{ box-sizing:border-box; }
+  html{ scroll-behavior:smooth; }
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Inter', sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .font-display{ font-family:'Cormorant Garamond', serif; }
+  .font-mono{ font-family:'Space Mono', monospace; }
+
+  /* Fragmentación de marca TRI / FEC / TA — firma visual del sitio,
+     tomada directamente de cómo el propio negocio divide su logo
+     en su feed de Instagram. Se reutiliza como separador estructural. */
+  .tri-mark span{ display:inline-block; }
+  .tri-mark .tri{ color:var(--brown); }
+  .tri-mark .fec{ color:var(--sage); }
+  .tri-mark .ta{ color:var(--brown); opacity:.55; }
+
+  ::selection{ background:var(--sage); color:var(--brown); }
+
+  a:focus-visible, button:focus-visible, input:focus-visible{
+    outline:2px solid var(--brown);
+    outline-offset:3px;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ animation-duration:0.001ms !important; transition-duration:0.001ms !important; }
+  }
+
+  .divider-tri{
+    display:flex; align-items:center; gap:.5rem;
+    font-family:'Space Mono', monospace;
+    letter-spacing:.15em;
+    font-size:.7rem;
+    color:var(--brown);
+    opacity:.6;
+  }
+  .divider-tri::before, .divider-tri::after{
+    content:''; height:1px; flex:1; background:currentColor; opacity:.3;
+  }
+
+  .card-lift{ transition: transform .35s ease, box-shadow .35s ease; }
+  .card-lift:hover{ transform: translateY(-4px); }
+
+  .underline-grow{ position:relative; }
+  .underline-grow::after{
+    content:''; position:absolute; left:0; bottom:-3px; height:1px; width:0;
+    background:var(--brown); transition:width .3s ease;
+  }
+  .underline-grow:hover::after{ width:100%; }
+
+  #hero-img{ animation:heroReveal 1.4s cubic-bezier(.2,.7,.2,1) both; }
+  @keyframes heroReveal{
+    from{ opacity:0; transform:scale(1.06); }
+    to{ opacity:1; transform:scale(1); }
+  }
+  .fade-up{ animation:fadeUp .8s ease both; }
+  @keyframes fadeUp{
+    from{ opacity:0; transform:translateY(18px); }
+    to{ opacity:1; transform:translateY(0); }
+  }
+
+  .modal-backdrop{ background:rgba(26,26,26,.55); backdrop-filter: blur(2px); }
+
+  /* Ícono lineal propio (no Font Awesome / emoji), trazo consistente */
+  .icon{ stroke:currentColor; stroke-width:1.4; fill:none; stroke-linecap:round; stroke-linejoin:round; }
+
+  .cat-btn[aria-pressed="true"]{
+    background:var(--brown); color:var(--bg); border-color:var(--brown);
+  }
+
+  ::-webkit-scrollbar{ width:10px; }
+  ::-webkit-scrollbar-track{ background:var(--bg); }
+  ::-webkit-scrollbar-thumb{ background:var(--sage); border-radius:0; }
+</style>
+</head>
+
+<body class="antialiased">
+
+<!-- ============ HEADER STICKY (transparente -> sólido en scroll) ============ -->
+<header id="site-header" class="fixed top-0 left-0 right-0 z-40 transition-all duration-500" style="background:transparent;">
+  <div class="max-w-7xl mx-auto px-6 md:px-10 flex items-center justify-between py-5">
+    <a href="#top" class="font-display italic text-2xl tracking-wide" style="color:var(--brown);">
+      Trifecta
+    </a>
+
+    <nav class="hidden md:flex items-center gap-8 font-mono text-[11px] tracking-[.15em] uppercase" style="color:var(--brown);">
+      <a href="#pilares" class="underline-grow">Los tres pilares</a>
+      <a href="#carta" class="underline-grow">Carta</a>
+      <a href="#historia" class="underline-grow">Nuestra historia</a>
+      <a href="#visitanos" class="underline-grow">Visítanos</a>
+    </nav>
+
+    <button id="cart-toggle" class="relative flex items-center gap-2 font-mono text-[11px] tracking-[.1em] uppercase" style="color:var(--brown);" aria-label="Abrir bolsa de pedido">
+      <svg class="icon w-5 h-5" viewBox="0 0 24 24"><path d="M6 8h12l-1 12H7L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>
+      <span class="hidden sm:inline">Pedido</span>
+      <span id="cart-count" class="absolute -top-2 -right-3 md:static md:ml-1 min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center text-[10px]" style="background:var(--sage); color:var(--brown);">0</span>
+    </button>
+  </div>
+</header>
+
+<!-- ============ HERO FULL-BLEED ============ -->
+<section id="top" class="relative w-full h-[92vh] min-h-[560px] overflow-hidden flex items-end">
+  <!-- FOTO DE EJEMPLO (Unsplash) — reemplazar por foto real del feed
+       @trifecta.cafeteria: café + té + pastelería servidos juntos en mesa -->
+  <img id="hero-img" src="https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?fit=crop&w=1600&q=80"
+       alt="Mesa con café, té y pastelería servidos juntos"
+       class="absolute inset-0 w-full h-full object-cover">
+  <div class="absolute inset-0" style="background:linear-gradient(180deg, rgba(26,26,26,.05) 0%, rgba(26,26,26,.55) 100%);"></div>
+
+  <div class="relative z-10 max-w-7xl mx-auto px-6 md:px-10 pb-16 w-full">
+    <p class="fade-up font-mono text-[11px] tracking-[.3em] uppercase mb-4" style="color:var(--sage); animation-delay:.2s;">
+      La Florida · Pastelería · Té · Café
+    </p>
+    <h1 class="fade-up font-display italic text-5xl md:text-7xl leading-[0.95] mb-6" style="color:var(--bg); animation-delay:.4s;">
+      La mejor combinación<br>es de tres.
+    </h1>
+    <p class="fade-up max-w-md text-sm md:text-base leading-relaxed" style="color:var(--cream); animation-delay:.6s;">
+      Un punto de encuentro para disfrutar, conectar y trabajar —
+      pastelería, té y café hechos con el mismo nivel de cuidado.
+    </p>
+    <a href="#carta" class="fade-up inline-block mt-8 font-mono text-[11px] tracking-[.2em] uppercase px-7 py-3 border" style="border-color:var(--bg); color:var(--bg); animation-delay:.8s;">
+      Ver la carta
+    </a>
+  </div>
+</section>
+
+<main>
+
+<!-- ============ LOS TRES PILARES ============ -->
+<section id="pilares" class="max-w-7xl mx-auto px-6 md:px-10 pt-24 pb-16">
+  <div class="divider-tri mb-10"><span>Los tres pilares</span></div>
+
+  <h2 class="font-display text-3xl md:text-5xl leading-tight max-w-2xl mb-14" style="color:var(--brown);">
+    No elegimos entre pastelería, té y café.
+    <span class="italic">Hacemos los tres, bien.</span>
+  </h2>
+
+  <div class="grid md:grid-cols-3 gap-px" style="background:var(--brown);">
+    <!-- TRI — CAFÉ -->
+    <article class="card-lift group relative aspect-[3/4] overflow-hidden" style="background:var(--ink);">
+      <img src="https://images.unsplash.com/photo-1541167760496-1628856ab772?fit=crop&w=900&q=80" alt="Latte con arte en taza de cerámica" class="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:opacity-95 transition-opacity duration-500">
+      <div class="absolute inset-0" style="background:linear-gradient(180deg, transparent 40%, rgba(26,26,26,.85) 100%);"></div>
+      <div class="relative z-10 h-full flex flex-col justify-end p-6">
+        <span class="font-mono text-[11px] tracking-[.2em] mb-2" style="color:var(--sage);">TRI</span>
+        <h3 class="font-display italic text-3xl" style="color:var(--bg);">Café</h3>
+        <p class="text-xs mt-2 leading-relaxed" style="color:var(--cream);">Espresso, cortados y filtrados, servidos en cerámica crema.</p>
+      </div>
+    </article>
+
+    <!-- FEC — PASTELERÍA -->
+    <article class="card-lift group relative aspect-[3/4] overflow-hidden" style="background:var(--ink);">
+      <img src="https://images.unsplash.com/photo-1488477181946-6428a0291777?fit=crop&w=900&q=80" alt="Tartaleta de frutos rojos" class="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:opacity-95 transition-opacity duration-500">
+      <div class="absolute inset-0" style="background:linear-gradient(180deg, transparent 40%, rgba(26,26,26,.85) 100%);"></div>
+      <div class="relative z-10 h-full flex flex-col justify-end p-6">
+        <span class="font-mono text-[11px] tracking-[.2em] mb-2" style="color:var(--sage);">FEC</span>
+        <h3 class="font-display italic text-3xl" style="color:var(--bg);">Pastelería</h3>
+        <p class="text-xs mt-2 leading-relaxed" style="color:var(--cream);">Tartaletas, tartas y horneados de producción propia, diarios.</p>
+      </div>
+    </article>
+
+    <!-- TA — TÉ -->
+    <article class="card-lift group relative aspect-[3/4] overflow-hidden" style="background:var(--ink);">
+      <img src="https://images.unsplash.com/photo-1544787219-7f47ccb76574?fit=crop&w=900&q=80" alt="Té en tetera de cerámica esmaltada verde oliva" class="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:opacity-95 transition-opacity duration-500">
+      <div class="absolute inset-0" style="background:linear-gradient(180deg, transparent 40%, rgba(26,26,26,.85) 100%);"></div>
+      <div class="relative z-10 h-full flex flex-col justify-end p-6">
+        <span class="font-mono text-[11px] tracking-[.2em] mb-2" style="color:var(--sage);">TA</span>
+        <h3 class="font-display italic text-3xl" style="color:var(--bg);">Té</h3>
+        <p class="text-xs mt-2 leading-relaxed" style="color:var(--cream);">Infusiones de hoja, servidas en tetera o taza, con flor y cítrico.</p>
+      </div>
+    </article>
+  </div>
+</section>
+
+<!-- ============ CARTA CON FILTROS ============ -->
+<!-- PRECIOS DE EJEMPLO — confirmar carta real con el dueño antes de enviar como propuesta final -->
+<section id="carta" class="px-6 md:px-10 py-20" style="background:var(--brown);">
+  <div class="max-w-7xl mx-auto">
+    <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-12">
+      <div>
+        <div class="divider-tri mb-6" style="color:var(--sage);"><span>Carta</span></div>
+        <h2 class="font-display text-3xl md:text-5xl italic" style="color:var(--bg);">Lo de siempre, hecho con cuidado.</h2>
+      </div>
+      <p class="font-mono text-[11px] tracking-wide max-w-xs" style="color:var(--cream); opacity:.7;">
+        Precios de referencia — el prototipo se actualizará con la carta definitiva.
+      </p>
+    </div>
+
+    <!-- Filtros dinámicos -->
+    <div class="flex flex-wrap gap-3 mb-12" id="filters" role="group" aria-label="Filtrar carta por categoría">
+      <button class="cat-btn px-5 py-2 font-mono text-[11px] tracking-[.15em] uppercase border rounded-full transition-colors" style="border-color:var(--sage); color:var(--bg);" data-filter="all" aria-pressed="true">Todo</button>
+      <button class="cat-btn px-5 py-2 font-mono text-[11px] tracking-[.15em] uppercase border rounded-full transition-colors" style="border-color:var(--sage); color:var(--bg);" data-filter="cafe" aria-pressed="false">Café</button>
+      <button class="cat-btn px-5 py-2 font-mono text-[11px] tracking-[.15em] uppercase border rounded-full transition-colors" style="border-color:var(--sage); color:var(--bg);" data-filter="pasteleria" aria-pressed="false">Pastelería</button>
+      <button class="cat-btn px-5 py-2 font-mono text-[11px] tracking-[.15em] uppercase border rounded-full transition-colors" style="border-color:var(--sage); color:var(--bg);" data-filter="te" aria-pressed="false">Té</button>
+    </div>
+
+    <div id="product-grid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+  </div>
+</section>
+
+<!-- ============ SECCIÓN DE MARCA — "punto de encuentro" ============ -->
+<section id="historia" class="max-w-7xl mx-auto px-6 md:px-10 py-24 grid md:grid-cols-2 gap-14 items-center">
+  <div>
+    <img src="https://images.unsplash.com/photo-1554118811-1e0d58224f24?fit=crop&w=900&q=80" alt="Personas trabajando y conversando en una cafetería" class="w-full aspect-[4/5] object-cover">
+  </div>
+  <div>
+    <div class="divider-tri mb-6"><span>Nuestra historia</span></div>
+    <h2 class="font-display italic text-3xl md:text-4xl leading-snug mb-6" style="color:var(--brown);">
+      Un punto de encuentro para disfrutar, conectar y trabajar.
+    </h2>
+    <p class="text-sm md:text-base leading-relaxed max-w-md" style="color:var(--ink); opacity:.85;">
+      Trifecta nació de una idea simple: la mejor combinación es de tres.
+      Pastelería, té y café, hechos con el mismo nivel de detalle, en un
+      espacio pensado tanto para quedarse un rato como para llevar.
+      Mesas para trabajar, wifi y tiempo — no solo una parada rápida.
+    </p>
+  </div>
+</section>
+
+<!-- ============ PRUEBA SOCIAL ============ -->
+<section class="px-6 md:px-10 py-20" style="background:var(--cream);">
+  <div class="max-w-3xl mx-auto text-center">
+    <div class="divider-tri mb-8 justify-center"><span>Reseña real · Google Maps</span></div>
+    <p class="font-display italic text-2xl md:text-4xl leading-snug mb-6" style="color:var(--brown);">
+      "Atienden excelente... se preocupan de los detalles y lo más
+      importante... tienen excelentes productos."
+    </p>
+    <div class="flex items-center justify-center gap-2 font-mono text-xs tracking-wide" style="color:var(--brown); opacity:.7;">
+      <span>Cliente en Google</span>
+      <span>·</span>
+      <span aria-label="5 de 5 estrellas">★★★★★</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============ VISÍTANOS ============ -->
+<section id="visitanos" class="max-w-7xl mx-auto px-6 md:px-10 py-24 grid md:grid-cols-2 gap-14">
+  <div>
+    <div class="divider-tri mb-6"><span>Visítanos</span></div>
+    <h2 class="font-display italic text-3xl md:text-4xl mb-8" style="color:var(--brown);">Te esperamos en La Florida.</h2>
+
+    <div class="flex items-start gap-4 mb-6">
+      <svg class="icon w-5 h-5 mt-1 shrink-0" style="color:var(--brown);" viewBox="0 0 24 24"><path d="M12 21s-7-6.4-7-11a7 7 0 0 1 14 0c0 4.6-7 11-7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg>
+      <p class="text-sm leading-relaxed" style="color:var(--ink);">
+        Alonso de Ercilla 1380<br>La Florida, Región Metropolitana, Chile
+      </p>
+    </div>
+
+    <div class="flex items-start gap-4 mb-6">
+      <svg class="icon w-5 h-5 mt-1 shrink-0" style="color:var(--brown);" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
+      <div class="text-sm leading-relaxed" style="color:var(--ink);">
+        <p>Lunes a viernes · 9:00 – 18:00</p>
+        <p style="opacity:.6;">Sábado y domingo · Cerrado</p>
+        <p id="open-indicator" class="mt-3 font-mono text-[11px] tracking-[.1em] uppercase inline-flex items-center gap-2"></p>
+      </div>
+    </div>
+
+    <div class="flex items-start gap-4">
+      <svg class="icon w-5 h-5 mt-1 shrink-0" style="color:var(--brown);" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M9 3v4M15 3v4"/><path d="M8 12h1M12 12h1M16 12h1M8 16h1M12 16h1"/></svg>
+      <a href="https://www.instagram.com/trifecta.cafeteria" target="_blank" rel="noopener" class="text-sm underline-grow" style="color:var(--ink);">@trifecta.cafeteria en Instagram</a>
+    </div>
+  </div>
+
+  <!-- Mapa embebido de ejemplo — reemplazar por embed real de Google Maps -->
+  <div class="w-full h-full min-h-[320px] relative overflow-hidden" style="background:var(--ink);">
+    <img src="https://images.unsplash.com/photo-1524661135-423995f22d0b?fit=crop&w=900&q=80" alt="Vista de barrio residencial, referencia de ubicación" class="absolute inset-0 w-full h-full object-cover opacity-60">
+    <div class="absolute inset-0 flex items-center justify-center">
+      <span class="font-mono text-[11px] tracking-[.2em] uppercase px-4 py-2" style="background:var(--bg); color:var(--brown);">Mapa de ejemplo — insertar embed real</span>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- ============ FOOTER ============ -->
+<footer class="px-6 md:px-10 py-14" style="background:var(--ink);">
+  <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
+    <div>
+      <p class="tri-mark font-display italic text-2xl mb-2">
+        <span class="tri" style="color:var(--sage);">Tri</span><span class="fec" style="color:var(--cream);">fec</span><span class="ta" style="color:var(--cream);">ta</span>
+      </p>
+      <p class="text-xs" style="color:var(--cream); opacity:.6;">Pastelería · Té · Café — La Florida</p>
+    </div>
+    <div class="flex flex-col sm:flex-row gap-6 font-mono text-[11px] tracking-[.15em] uppercase" style="color:var(--cream);">
+      <a href="https://www.instagram.com/trifecta.cafeteria" target="_blank" rel="noopener" class="underline-grow">Instagram</a>
+      <a href="#visitanos" class="underline-grow">Ubicación</a>
+      <a href="#carta" class="underline-grow">Carta</a>
+    </div>
+  </div>
+  <p class="max-w-7xl mx-auto mt-10 pt-6 text-[10px] font-mono" style="color:var(--cream); opacity:.4; border-top:1px solid rgba(232,217,181,.15);">
+    Prototipo beta de diseño — no es el sitio en producción.
+  </p>
+</footer>
+
+<!-- ============ MODAL DE PRODUCTO ============ -->
+<div id="product-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+  <div class="w-full max-w-lg" style="background:var(--bg);">
+    <div class="relative">
+      <img id="modal-img" src="" alt="" class="w-full h-64 object-cover">
+      <button id="modal-close" class="absolute top-4 right-4 w-9 h-9 flex items-center justify-center" style="background:var(--bg);" aria-label="Cerrar ficha de producto">
+        <svg class="icon w-4 h-4" style="color:var(--brown);" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+    <div class="p-6">
+      <span id="modal-cat" class="font-mono text-[10px] tracking-[.2em] uppercase" style="color:var(--sage-dark, var(--brown)); opacity:.6;"></span>
+      <h3 id="modal-title" class="font-display italic text-3xl mt-1 mb-3" style="color:var(--brown);"></h3>
+      <p id="modal-desc" class="text-sm leading-relaxed mb-6" style="color:var(--ink); opacity:.8;"></p>
+      <div class="flex items-center justify-between">
+        <span id="modal-price" class="font-mono text-lg" style="color:var(--brown);"></span>
+        <button id="modal-add" class="font-mono text-[11px] tracking-[.15em] uppercase px-6 py-3" style="background:var(--brown); color:var(--bg);">Agregar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ PANEL DE PEDIDO (BOLSA) ============ -->
+<div id="cart-panel" class="fixed inset-y-0 right-0 z-50 w-full sm:w-[420px] translate-x-full transition-transform duration-500 flex flex-col" style="background:var(--bg); box-shadow:-8px 0 30px rgba(26,26,26,.15);">
+  <div class="flex items-center justify-between px-6 py-5" style="border-bottom:1px solid var(--cream);">
+    <h3 class="font-display italic text-2xl" style="color:var(--brown);">Tu pedido</h3>
+    <button id="cart-close" aria-label="Cerrar bolsa de pedido">
+      <svg class="icon w-5 h-5" style="color:var(--brown);" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </div>
+
+  <div id="cart-items" class="flex-1 overflow-y-auto px-6 py-4 space-y-4"></div>
+
+  <div class="px-6 py-6" style="border-top:1px solid var(--cream);">
+    <!-- Selector método de entrega -->
+    <div class="mb-5">
+      <p class="font-mono text-[10px] tracking-[.15em] uppercase mb-2" style="color:var(--brown); opacity:.6;">Método de entrega</p>
+      <div class="grid grid-cols-2 gap-2" id="delivery-select" role="group" aria-label="Método de entrega">
+        <button data-delivery="retiro" class="delivery-btn px-3 py-2 font-mono text-[11px] uppercase border" style="border-color:var(--brown); color:var(--brown);" aria-pressed="true">Retiro en local</button>
+        <button data-delivery="despacho" class="delivery-btn px-3 py-2 font-mono text-[11px] uppercase border" style="border-color:var(--brown); color:var(--brown);" aria-pressed="false">Despacho barrio</button>
+      </div>
+    </div>
+
+    <div class="flex items-center justify-between mb-5 font-mono text-sm" style="color:var(--brown);">
+      <span>Total</span>
+      <span id="cart-total">$0</span>
+    </div>
+
+    <button id="cart-whatsapp" class="w-full flex items-center justify-center gap-3 font-mono text-[11px] tracking-[.15em] uppercase py-4" style="background:var(--brown); color:var(--bg);">
+      <svg class="icon w-4 h-4" viewBox="0 0 24 24"><path d="M4 20l1.4-4.2A8 8 0 1 1 9 19.6L4 20Z"/><path d="M8.5 9.5c0 3 2.5 5.5 5.5 5.5"/></svg>
+      Enviar pedido por WhatsApp
+    </button>
+    <!-- WHATSAPP DE EJEMPLO — número aún no confirmado en la ficha pública,
+         confirmar en terreno con el dueño antes de producción -->
+    <p class="text-[10px] font-mono mt-3 text-center" style="color:var(--brown); opacity:.45;">
+      Número de WhatsApp de ejemplo — confirmar con el local
+    </p>
+  </div>
+</div>
+<div id="cart-overlay" class="fixed inset-0 z-40 hidden modal-backdrop"></div>
+
+<script>
+/* ==========================================================
+   DATOS DE PRODUCTO
+   PRECIOS DE EJEMPLO — confirmar carta real con el dueño antes
+   de enviar como propuesta final. Nombres genéricos pero
+   realistas dentro de los tres pilares confirmados por el
+   propio negocio (Café / Pastelería / Té).
+   ========================================================== */
+const PRODUCTS = [
+  { id:'p1', cat:'cafe', label:'Café', name:'Latte', price:3200,
+    desc:'Espresso doble con leche vaporizada, servido en taza de cerámica crema.',
+    img:'https://images.unsplash.com/photo-1541167760496-1628856ab772?fit=crop&w=1200&q=80' },
+  { id:'p2', cat:'cafe', label:'Café', name:'Cortado', price:2500,
+    desc:'Espresso cortado con un toque de leche, cuerpo intenso y suave.',
+    img:'https://images.unsplash.com/photo-1497935586351-b67a49e012bf?fit=crop&w=1200&q=80' },
+  { id:'p3', cat:'cafe', label:'Café', name:'Espresso', price:2000,
+    desc:'Extracción corta y concentrada, tueste de especialidad.',
+    img:'https://images.unsplash.com/photo-1510707577719-ae7c14805e3a?fit=crop&w=1200&q=80' },
+  { id:'p4', cat:'pasteleria', label:'Pastelería', name:'Tartaleta de Frutos Rojos', price:3500,
+    desc:'Base crocante, crema pastelera y frambuesas y arándanos frescos.',
+    img:'https://images.unsplash.com/photo-1488477181946-6428a0291777?fit=crop&w=1200&q=80' },
+  { id:'p5', cat:'pasteleria', label:'Pastelería', name:'Tarta de Limón Merengada', price:3200,
+    desc:'Crema de limón sobre base de mantequilla, coronada con merengue.',
+    img:'https://images.unsplash.com/photo-1519869325930-281384150729?fit=crop&w=1200&q=80' },
+  { id:'p6', cat:'pasteleria', label:'Pastelería', name:'Croissant de Almendras', price:2800,
+    desc:'Hojaldre de mantequilla relleno de crema de almendras, horneado diario.',
+    img:'https://images.unsplash.com/photo-1555507036-ab1f4038808a?fit=crop&w=1200&q=80' },
+  { id:'p7', cat:'te', label:'Té', name:'Té de Flor de Jamaica', price:2800,
+    desc:'Infusión floral y cítrica, servida en tetera de cerámica esmaltada.',
+    img:'https://images.unsplash.com/photo-1544787219-7f47ccb76574?fit=crop&w=1200&q=80' },
+  { id:'p8', cat:'te', label:'Té', name:'Té Verde con Cítrico', price:2800,
+    desc:'Té verde de hoja con notas cítricas, servido en porcelana blanca.',
+    img:'https://images.unsplash.com/photo-1556679343-c7306c1976bc?fit=crop&w=1200&q=80' },
+  { id:'p9', cat:'te', label:'Té', name:'Infusión de Hierbas', price:2500,
+    desc:'Mezcla de hierbas de la casa, sin cafeína, ideal para la tarde.',
+    img:'https://images.unsplash.com/photo-1597481499750-3e6b22637e12?fit=crop&w=1200&q=80' },
+];
+
+const fmt = n => '$' + n.toLocaleString('es-CL');
+
+/* -------- Render de carta / filtros -------- */
+const grid = document.getElementById('product-grid');
+function renderProducts(filter){
+  grid.innerHTML = '';
+  const list = filter === 'all' ? PRODUCTS : PRODUCTS.filter(p => p.cat === filter);
+  list.forEach((p, i) => {
+    const card = document.createElement('article');
+    card.className = 'card-lift cursor-pointer';
+    card.style.background = 'var(--bg)';
+    card.setAttribute('data-id', p.id);
+    card.innerHTML = `
+      <div class="aspect-square overflow-hidden mb-3">
+        <img src="${p.img}" alt="${p.name}" class="w-full h-full object-cover">
+      </div>
+      <div class="px-1 pb-2 flex items-start justify-between gap-3">
+        <div>
+          <p class="font-mono text-[10px] tracking-[.15em] uppercase mb-1" style="color:var(--sage);">${p.label}</p>
+          <h3 class="font-display italic text-xl" style="color:var(--bg);">${p.name}</h3>
+        </div>
+        <span class="font-mono text-sm shrink-0" style="color:var(--sage);">${fmt(p.price)}</span>
+      </div>`;
+    card.addEventListener('click', () => openModal(p.id));
+    grid.appendChild(card);
+  });
+}
+renderProducts('all');
+
+document.querySelectorAll('.cat-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.cat-btn').forEach(b=>b.setAttribute('aria-pressed','false'));
+    btn.setAttribute('aria-pressed','true');
+    renderProducts(btn.dataset.filter);
+  });
+});
+
+/* -------- Modal de producto -------- */
+const modal = document.getElementById('product-modal');
+let modalProductId = null;
+function openModal(id){
+  const p = PRODUCTS.find(x=>x.id===id);
+  if(!p) return;
+  modalProductId = id;
+  document.getElementById('modal-img').src = p.img;
+  document.getElementById('modal-img').alt = p.name;
+  document.getElementById('modal-cat').textContent = p.label;
+  document.getElementById('modal-title').textContent = p.name;
+  document.getElementById('modal-desc').textContent = p.desc;
+  document.getElementById('modal-price').textContent = fmt(p.price);
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+}
+function closeModal(){
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
+}
+document.getElementById('modal-close').addEventListener('click', closeModal);
+modal.addEventListener('click', e=>{ if(e.target === modal) closeModal(); });
+document.getElementById('modal-add').addEventListener('click', ()=>{
+  if(modalProductId){ addToCart(modalProductId); closeModal(); openCart(); }
+});
+
+/* -------- Carrito / bolsa de pedido -------- */
+let cart = {}; // { id: qty }
+const cartPanel = document.getElementById('cart-panel');
+const cartOverlay = document.getElementById('cart-overlay');
+
+function addToCart(id){
+  cart[id] = (cart[id] || 0) + 1;
+  renderCart();
+}
+function changeQty(id, delta){
+  cart[id] = (cart[id] || 0) + delta;
+  if(cart[id] <= 0) delete cart[id];
+  renderCart();
+}
+function renderCart(){
+  const container = document.getElementById('cart-items');
+  const ids = Object.keys(cart);
+  const count = ids.reduce((s,id)=>s+cart[id],0);
+  document.getElementById('cart-count').textContent = count;
+
+  if(ids.length === 0){
+    container.innerHTML = `<p class="text-sm font-mono opacity-50 mt-10 text-center" style="color:var(--brown);">Tu bolsa está vacía.</p>`;
+  } else {
+    container.innerHTML = ids.map(id=>{
+      const p = PRODUCTS.find(x=>x.id===id);
+      return `
+      <div class="flex items-center gap-3">
+        <img src="${p.img}" alt="${p.name}" class="w-16 h-16 object-cover shrink-0">
+        <div class="flex-1 min-w-0">
+          <p class="font-display italic text-lg leading-none" style="color:var(--brown);">${p.name}</p>
+          <p class="font-mono text-xs mt-1" style="color:var(--brown); opacity:.6;">${fmt(p.price)}</p>
+        </div>
+        <div class="flex items-center gap-2 font-mono text-sm" style="color:var(--brown);">
+          <button aria-label="Restar" class="w-6 h-6 border" style="border-color:var(--brown);" onclick="changeQty('${id}',-1)">–</button>
+          <span>${cart[id]}</span>
+          <button aria-label="Sumar" class="w-6 h-6 border" style="border-color:var(--brown);" onclick="changeQty('${id}',1)">+</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  const total = ids.reduce((s,id)=> s + PRODUCTS.find(x=>x.id===id).price * cart[id], 0);
+  document.getElementById('cart-total').textContent = fmt(total);
+}
+renderCart();
+
+function openCart(){
+  cartPanel.classList.remove('translate-x-full');
+  cartOverlay.classList.remove('hidden');
+}
+function closeCart(){
+  cartPanel.classList.add('translate-x-full');
+  cartOverlay.classList.add('hidden');
+}
+document.getElementById('cart-toggle').addEventListener('click', openCart);
+document.getElementById('cart-close').addEventListener('click', closeCart);
+cartOverlay.addEventListener('click', closeCart);
+
+/* -------- Selector método de entrega -------- */
+let deliveryMethod = 'retiro';
+document.querySelectorAll('.delivery-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.delivery-btn').forEach(b=>{
+      b.setAttribute('aria-pressed','false');
+      b.style.background = 'transparent'; b.style.color='var(--brown)';
+    });
+    btn.setAttribute('aria-pressed','true');
+    btn.style.background = 'var(--brown)'; btn.style.color='var(--bg)';
+    deliveryMethod = btn.dataset.delivery;
+  });
+});
+document.querySelector('.delivery-btn[data-delivery="retiro"]').style.background = 'var(--brown)';
+document.querySelector('.delivery-btn[data-delivery="retiro"]').style.color = 'var(--bg)';
+
+/* -------- Envío de pedido a WhatsApp -------- */
+// NÚMERO DE EJEMPLO — no está publicado en la ficha del negocio,
+// reemplazar por el WhatsApp real confirmado con el dueño.
+const WHATSAPP_NUMBER = '56900000000';
+document.getElementById('cart-whatsapp').addEventListener('click', ()=>{
+  const ids = Object.keys(cart);
+  if(ids.length === 0) return;
+  const lines = ids.map(id=>{
+    const p = PRODUCTS.find(x=>x.id===id);
+    return `• ${cart[id]}x ${p.name} — ${fmt(p.price * cart[id])}`;
+  });
+  const total = ids.reduce((s,id)=> s + PRODUCTS.find(x=>x.id===id).price * cart[id], 0);
+  const deliveryLabel = deliveryMethod === 'retiro' ? 'Retiro en local' : 'Despacho barrio';
+  const text = `Hola Trifecta! Quiero hacer este pedido:%0A%0A${lines.join('%0A')}%0A%0ATotal: ${fmt(total)}%0AEntrega: ${deliveryLabel}`;
+  window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${text}`, '_blank');
+});
+
+/* -------- Indicador de abierto / cerrado en tiempo real --------
+   Horario real confirmado (Google Maps): lunes a viernes 9:00–18:00,
+   sábado y domingo cerrado. Se calcula con la hora del navegador
+   del visitante. */
+function updateOpenIndicator(){
+  const now = new Date();
+  const day = now.getDay(); // 0 domingo ... 6 sábado
+  const hour = now.getHours() + now.getMinutes()/60;
+  const isWeekday = day >= 1 && day <= 5;
+  const isOpen = isWeekday && hour >= 9 && hour < 18;
+
+  const el = document.getElementById('open-indicator');
+  if(isOpen){
+    el.innerHTML = `<span style="width:7px;height:7px;border-radius:50%;background:#5C7A3D;display:inline-block;"></span> Abierto ahora`;
+    el.style.color = '#3B5C22';
+  } else {
+    el.innerHTML = `<span style="width:7px;height:7px;border-radius:50%;background:#8a3b3b;display:inline-block;"></span> Cerrado ahora`;
+    el.style.color = '#7a3b3b';
+  }
+}
+updateOpenIndicator();
+setInterval(updateOpenIndicator, 60000);
+
+/* -------- Header sticky: transparente -> sólido -------- */
+const header = document.getElementById('site-header');
+function updateHeader(){
+  if(window.scrollY > 60){
+    header.style.background = 'rgba(250,249,245,0.92)';
+    header.style.backdropFilter = 'blur(6px)';
+    header.style.boxShadow = '0 1px 0 rgba(59,42,30,0.08)';
+  } else {
+    header.style.background = 'transparent';
+    header.style.backdropFilter = 'none';
+    header.style.boxShadow = 'none';
+  }
+}
+window.addEventListener('scroll', updateHeader);
+updateHeader();
+</script>
+
+</body>
+</html>
+
